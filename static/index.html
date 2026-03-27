@@ -475,6 +475,7 @@
               <th onclick="sortBy('price')">PV ⇅</th>
               <th onclick="sortBy('unit')">Unidad ⇅</th>
               <th onclick="sortBy('price_per_kg')">S/kg ⇅</th>
+              <th onclick="sortBy('in_stock')">Stock ⇅</th>
               <th onclick="sortBy('cost_price')" title="Solo Fresqui">Costo ⇅</th>
               <th onclick="sortBy('margin')" title="Solo Fresqui">Margen ⇅</th>
             </tr>
@@ -776,6 +777,7 @@ function productRowHtml(p) {
     <td class="price-cell">S/ ${p.price?.toFixed(2) ?? '--'}</td>
     <td>${p.unit ?? '--'}</td>
     <td class="price-cell">${p.price_per_kg ? 'S/ ' + p.price_per_kg.toFixed(2) : '--'}</td>
+    <td>${p.in_stock === false ? '<span style="color:var(--red);font-weight:700">✗</span>' : p.in_stock === true && p.site !== \'Fresqui\' ? '<span style="color:var(--green);font-weight:700">✓</span>' : '<span style="color:var(--muted)">—</span>'}</td>
     <td>${costHtml}</td>
     <td>${marginHtml}</td>
   </tr>`;
@@ -804,7 +806,7 @@ function renderTable() {
 
   const tbody = document.getElementById('products-body');
   if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:28px">Sin resultados</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:28px">Sin resultados</td></tr>`;
     return;
   }
 
@@ -834,7 +836,7 @@ function renderTable() {
       const minPrice = items.filter(p => p.site !== 'Fresqui' && p.price != null)
         .reduce((m, p) => Math.min(m, p.price), Infinity);
       const priceInfo = isFinite(minPrice) ? ` — desde S/ ${minPrice.toFixed(2)}` : '';
-      html += `<tr class="group-header-row"><td colspan="8">▸ ${key}${priceInfo} (${items.length} tienda${items.length !== 1 ? 's' : ''})</td></tr>`;
+      html += `<tr class="group-header-row"><td colspan="9">▸ ${key}${priceInfo} (${items.length} tienda${items.length !== 1 ? 's' : ''})</td></tr>`;
       items.slice(0, 500 - total).forEach(p => { html += productRowHtml(p); });
       total += items.length;
     }
