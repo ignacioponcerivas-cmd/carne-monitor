@@ -154,7 +154,7 @@ class ScraperRunner:
                 delay=scraping_cfg["delay_between_requests"],
             )
             scraper._stop_event = self._stop_event
-            scraper._progress_callback = self._on_category_progress
+            scraper._progress_callback = self._make_callback(site_key)
 
             try:
                 products = scraper.scrape_all()
@@ -173,11 +173,13 @@ class ScraperRunner:
 
         self._emit({"type": "finished", "state": final_state, "total": total})
 
-    def _on_category_progress(self, site_name: str, category: str, count: int, state: str) -> None:
-        with self._lock:
-            for site_key, site_data in self._status["progress"].items():
+    def _make_callback(self, site_key: str):
+        """Returns a progress callback bound to a specific site_key."""
+        def callback(site_name: str, category: str, count: int, state: str) -> None:
+            with self._lock:
+                site_data = self._status["progress"].get(site_key, {})
                 if category in site_data:
                     site_data[category] = {"state": state, "count": count}
-                    break
-        self._emit({"type": "progress", "site": site_name, "category": category,
-                    "count": count, "state": state})
+            self._emit({"type": "progress", "site": site_name, "category": category,
+                        "count": count, "state": state})
+        return callback

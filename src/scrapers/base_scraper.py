@@ -61,10 +61,10 @@ class BaseScraper(ABC):
     def scrape_category(self, page: Page, category: str, path: str) -> List[Product]:
         raise NotImplementedError
 
-    def _navigate(self, page: Page, url: str, wait: str = "networkidle") -> bool:
+    def _navigate(self, page: Page, url: str, wait: str = "domcontentloaded") -> bool:
         """Navigate and wait for full JS render."""
         try:
-            page.goto(url, wait_until=wait, timeout=30000)
+            page.goto(url, wait_until=wait, timeout=45000)
             # Let JS finish rendering
             page.wait_for_timeout(3000)
             # Scroll to trigger lazy-loaded products

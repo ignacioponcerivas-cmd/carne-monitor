@@ -79,6 +79,18 @@ def build_fresqui_index(fresqui: List[Product]) -> Dict[str, Set[str]]:
     for p in fresqui:
         kws = _keywords(p.name)
         index.setdefault(p.category, set()).update(kws)
+
+    # Normalizar singular/plural para evitar falsos negativos
+    # "huevos" en Fresqui no matcheaba "huevo" de competidores
+    for cat, kws in index.items():
+        extras: Set[str] = set()
+        for kw in kws:
+            if kw.endswith('s') and len(kw) > 4:
+                extras.add(kw[:-1])   # huevos → huevo
+            else:
+                extras.add(kw + 's')  # huevo → huevos
+        kws.update(extras)
+
     return index
 
 
