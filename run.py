@@ -10,10 +10,11 @@ if __name__ == "__main__":
     print("=" * 50)
     print("  Carne Monitor — http://localhost:8000")
     print("=" * 50)
+    port = int(os.environ.get("PORT", 8000))
     uvicorn.run(
         "src.server:app",
         host="0.0.0.0",
-        port=8000,
+        port=port,
         reload=False,
         log_level="info",
     )
