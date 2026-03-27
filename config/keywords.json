@@ -1,0 +1,45 @@
+{
+  "_comment": "Palabras clave derivadas del Excel de productos. Un producto DEBE contener al menos una keyword de su categoría para ser aceptado. Si pasa el filtro general también se acepta.",
+  "pollo": [
+    "pollo", "pechuga", "pierna", "muslo", "muslito", "alitas", "ala",
+    "corazon", "corazón", "menudencia", "pavita", "pavo"
+  ],
+  "res": [
+    "res", "vacuno", "bisteck", "lomo", "cuadril", "molida", "churrasco",
+    "asado", "osobuco", "costillar", "higado", "hígado", "ternera",
+    "entrañas", "colita", "picaña", "bife", "milanesa de res",
+    "carne", "guiso", "sancochado", "filete de res"
+  ],
+  "cerdo": [
+    "cerdo", "panceta", "bondiola", "chuleta", "chicharron", "chicharrón",
+    "baby ribs", "tocino", "lomo de cerdo", "bife de cerdo",
+    "costilla de cerdo", "pierna de cerdo"
+  ],
+  "huevos": [
+    "huevo", "huevos"
+  ],
+  "embutidos": [
+    "chorizo", "tocineta", "tocino", "hamburguesa", "chicken strips",
+    "nuggets", "hot dog", "jamon", "jamón", "salchicha", "mortadela",
+    "pepperoni", "bacon", "embutido", "salame", "salami", "butifarra",
+    "longaniza", "cecina", "bresaola", "pastrami", "milanesa de pollo"
+  ],
+  "global_exclude": [
+    "vino", "cerveza", "bebida", "gaseosa", "jugo", "agua mineral",
+    "yogurt", "leche", "queso", "mantequilla", "aceite", "pasta", "arroz",
+    "azucar", "detergente", "shampoo", "jabon", "cepillo", "crema dental",
+    "enjuague", "desodorante", "papel", "servilleta", "pañal",
+    "alimento para gato", "alimento para perro", "alimento para mascota",
+    "comida para gato", "comida para perro", "snack para", "premio para",
+    "purina", "ricocat", "churu", "pedigree", "whiskas", "royal canin",
+    "saborizante", "condimento", "aliño", "marinada",
+    "galleta", "torta", "pastel", "caramelo", "chocolate", "cafe", "café",
+    "champagne", "licor", "pisco", "ron ", "vodka", "whisky",
+    "atun", "sardina", "mermelada",
+    "organizador de", "cocedor de", "cocedor ", "pascua", "rallador",
+    "tabla de cortar", "pinza", "brocha", "molde", "utensilio",
+    "accesorio", "envase", "recipiente", "contenedor", "porta",
+    "bandeja para", "canasta", "decoracion", "adorno",
+    "bolsa de basura", "guante de", "esponja"
+  ]
+}

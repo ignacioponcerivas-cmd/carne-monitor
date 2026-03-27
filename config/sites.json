@@ -1,0 +1,51 @@
+{
+  "sites": {
+    "wong": {
+      "name": "Wong",
+      "base_url": "https://www.wong.pe",
+      "categories": {
+        "pollo":      "/pollo",
+        "res":        "/carnes",
+        "cerdo":      "/cerdo",
+        "huevos":     "/huevos",
+        "embutidos":  "/embutidos"
+      },
+      "type": "vtex",
+      "enabled": true
+    },
+    "metro": {
+      "name": "Metro",
+      "base_url": "https://www.metro.pe",
+      "categories": {
+        "pollo":      "/pollo",
+        "res":        "/carnes",
+        "cerdo":      "/cerdo",
+        "huevos":     "/huevos",
+        "embutidos":  "/embutidos"
+      },
+      "type": "vtex",
+      "enabled": true
+    },
+    "plazavea": {
+      "name": "Plaza Vea",
+      "base_url": "https://www.plazavea.com.pe",
+      "categories": {
+        "pollo":      "pollo",
+        "res":        "carnes",
+        "cerdo":      "cerdo",
+        "huevos":     "huevos",
+        "embutidos":  "embutidos"
+      },
+      "type": "vtex_api",
+      "enabled": true
+    }
+  },
+  "categories": ["pollo", "res", "cerdo", "huevos", "embutidos"],
+  "scraping": {
+    "delay_between_requests": 2,
+    "max_retries": 3,
+    "timeout": 30,
+    "headless": true,
+    "vtex_page_size": 49
+  }
+}

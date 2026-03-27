@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Carne Monitor — Retail Peru</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg:        #0b1120;
+      --surface:   #131f35;
+      --surface2:  #1c2e4a;
+      --border:    #2a3f5f;
+      --text:      #e2e8f0;
+      --muted:     #7a94b4;
+      --accent:    #3b82f6;
+      --accent2:   #6366f1;
+      --green:     #22c55e;
+      --yellow:    #f59e0b;
+      --red:       #ef4444;
+      --purple:    #a855f7;
+      --radius:    8px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo-icon { font-size: 28px; }
+    .logo h1 { font-size: 1.2rem; font-weight: 700; letter-spacing: -0.5px; }
+    .logo span { color: var(--muted); font-size: .85rem; }
+    .header-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    #state-badge {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: .78rem;
+      font-weight: 600;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+    }
+    .badge-idle    { background: #1e293b; color: var(--muted); border: 1px solid var(--border); }
+    .badge-running { background: #1d2d5a; color: #60a5fa; border: 1px solid #3b82f6; animation: pulse-border 1.5s infinite; }
+    .badge-done    { background: #14332a; color: var(--green); border: 1px solid var(--green); }
+    .badge-stopped { background: #2d1a1a; color: var(--red); border: 1px solid var(--red); }
+    @keyframes pulse-border { 0%,100%{opacity:1} 50%{opacity:.6} }
+
+    /* ── Buttons ── */
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: var(--radius);
+      font-size: .85rem;
+      font-weight: 600;
+      padding: 8px 18px;
+      transition: opacity .15s, transform .1s;
+    }
+    button:hover { opacity: .88; transform: translateY(-1px); }
+    button:active { transform: translateY(0); }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-danger  { background: var(--red); color: #fff; }
+    .btn-ghost   { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+
+    /* ── Main layout ── */
+    main { padding: 24px 28px; display: flex; flex-direction: column; gap: 24px; }
+
+    /* ── Stat cards ── */
+    .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+    }
+    .stat-label { font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; }
+    .stat-value { font-size: 2rem; font-weight: 700; margin-top: 4px; }
+    .stat-sub   { font-size: .78rem; color: var(--muted); margin-top: 2px; }
+
+    /* ── Two-column area ── */
+    .two-col { display: grid; grid-template-columns: 1fr 360px; gap: 20px; }
+    @media (max-width: 1000px) { .two-col { grid-template-columns: 1fr; } }
+
+    /* ── Panel ── */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .panel-header {
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--border);
+      font-size: .85rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .panel-body { padding: 16px 18px; }
+
+    /* ── Progress grid ── */
+    .progress-table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+    .progress-table th {
+      text-align: left;
+      padding: 6px 10px;
+      color: var(--muted);
+      font-weight: 600;
+      border-bottom: 1px solid var(--border);
+      font-size: .75rem;
+      text-transform: uppercase;
+    }
+    .progress-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); }
+    .progress-table tr:last-child td { border-bottom: none; }
+    .progress-table .site-name { font-weight: 600; white-space: nowrap; }
+
+    .cat-cell {
+      text-align: center;
+      min-width: 70px;
+    }
+    .pill {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 12px;
+      font-size: .75rem;
+      font-weight: 600;
+    }
+    .pill-pending  { background: #1e293b; color: var(--muted); }
+    .pill-running  { background: #1d2d5a; color: #60a5fa; animation: pulse-border 1s infinite; }
+    .pill-done     { background: #14332a; color: var(--green); }
+    .pill-error    { background: #2d1a1a; color: var(--red); }
+
+    /* ── Log panel ── */
+    #log-panel {
+      height: 320px;
+      overflow-y: auto;
+      font-family: 'Cascadia Code', 'Courier New', monospace;
+      font-size: .78rem;
+      line-height: 1.6;
+      padding: 12px 16px;
+      background: #070d1a;
+      border-radius: 0 0 var(--radius) var(--radius);
+    }
+    .log-line { margin-bottom: 2px; }
+    .log-time  { color: var(--muted); }
+    .log-info  { color: #60a5fa; }
+    .log-ok    { color: var(--green); }
+    .log-warn  { color: var(--yellow); }
+    .log-error { color: var(--red); }
+
+    /* ── Products table ── */
+    .table-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+    .search-input {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: var(--radius);
+      padding: 7px 12px;
+      font-size: .85rem;
+      width: 220px;
+    }
+    .search-input:focus { outline: 2px solid var(--accent); border-color: transparent; }
+    select.filter-sel {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: var(--radius);
+      padding: 7px 10px;
+      font-size: .85rem;
+    }
+    .products-wrap { overflow-x: auto; max-height: 380px; overflow-y: auto; }
+    .products-table { width: 100%; border-collapse: collapse; font-size: .83rem; }
+    .products-table th {
+      position: sticky;
+      top: 0;
+      background: var(--surface2);
+      padding: 9px 12px;
+      text-align: left;
+      font-size: .73rem;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      color: var(--muted);
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+    }
+    .products-table th:hover { color: var(--text); }
+    .products-table td {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      max-width: 260px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .products-table tr:hover td { background: var(--surface2); }
+    .site-tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: .72rem;
+      font-weight: 600;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+    }
+    .cat-tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: .72rem;
+      font-weight: 600;
+    }
+    .cat-pollo     { background: #2d3a1a; color: #86efac; }
+    .cat-res       { background: #3a1a1a; color: #fca5a5; }
+    .cat-cerdo     { background: #3a2a1a; color: #fdba74; }
+    .cat-huevos    { background: #3a351a; color: #fde68a; }
+    .cat-embutidos { background: #2a1a3a; color: #d8b4fe; }
+
+    /* ── Fresqui row highlight ── */
+    .fresqui-row td { background: #1a1500 !important; }
+    .fresqui-row:hover td { background: #2a2200 !important; }
+    .site-fresqui {
+      background: #3d2e00; color: #fbbf24;
+      border: 1px solid #b45309;
+    }
+    .margin-good { color: #4ade80; font-weight: 700; }
+    .margin-warn { color: #fbbf24; font-weight: 700; }
+    .margin-bad  { color: #f87171; font-weight: 700; }
+
+    /* ── Comparison panel ── */
+    .comp-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+    .comp-table th {
+      padding: 8px 12px; text-align: left;
+      background: var(--surface2); font-size: .73rem;
+      text-transform: uppercase; letter-spacing: .5px; color: var(--muted);
+    }
+    .comp-table td { padding: 7px 12px; border-bottom: 1px solid var(--border); }
+    .comp-table tr:last-child td { border-bottom: none; }
+    .comp-table tr:hover td { background: var(--surface2); }
+    .price-fresqui { color: #fbbf24; font-weight: 700; font-family: monospace; }
+    .price-lower   { color: #4ade80; font-family: monospace; }
+    .price-higher  { color: #f87171; font-family: monospace; }
+    .diff-badge {
+      display: inline-block; padding: 1px 7px; border-radius: 10px;
+      font-size: .72rem; font-weight: 700;
+    }
+    .diff-cheaper { background: #14332a; color: #4ade80; }
+    .diff-parity  { background: #1e293b; color: #94a3b8; }
+    .diff-dearer  { background: #2d1a1a; color: #f87171; }
+    .price-cell { font-weight: 700; color: #93c5fd; font-family: monospace; }
+
+    /* ── Chart ── */
+    .chart-wrap { height: 280px; padding: 8px 0; }
+
+    /* ── Config modal ── */
+    .modal-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.65);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px;
+      width: 440px;
+      max-width: 95vw;
+    }
+    .modal h2 { font-size: 1.1rem; margin-bottom: 18px; }
+    .modal-group { margin-bottom: 18px; }
+    .modal-group label { display: block; font-size: .8rem; color: var(--muted); margin-bottom: 8px; font-weight: 600; text-transform: uppercase; }
+    .checkbox-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+    .checkbox-grid label {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 6px; padding: 5px 12px;
+      cursor: pointer; font-size: .85rem; color: var(--text);
+      text-transform: none;
+    }
+    .checkbox-grid input[type=checkbox] { accent-color: var(--accent); }
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; }
+    .toggle { position: relative; width: 40px; height: 22px; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute; inset: 0;
+      background: var(--surface2); border-radius: 22px;
+      cursor: pointer; transition: .2s;
+    }
+    .toggle-slider:before {
+      content: ""; position: absolute;
+      width: 16px; height: 16px;
+      left: 3px; bottom: 3px;
+      background: #fff; border-radius: 50%;
+      transition: .2s;
+    }
+    .toggle input:checked + .toggle-slider { background: var(--accent); }
+    .toggle input:checked + .toggle-slider:before { transform: translateX(18px); }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
+
+    /* ── WS indicator ── */
+    .ws-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+      display: inline-block;
+      margin-right: 6px;
+      transition: background .3s;
+    }
+    .ws-dot.connected { background: var(--green); box-shadow: 0 0 6px var(--green); }
+
+    /* ── Group rows ── */
+    .group-header-row td {
+      background: var(--surface2) !important;
+      color: var(--accent);
+      font-weight: 700;
+      font-size: .8rem;
+      padding: 6px 12px;
+      border-top: 2px solid var(--border);
+      letter-spacing: .4px;
+      text-transform: uppercase;
+    }
+    .group-header-row:hover td { background: var(--surface2) !important; }
+    .btn-group-active { background: var(--accent) !important; color: #fff !important; border-color: var(--accent) !important; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════ HEADER ═══════════════════ -->
+<header>
+  <div class="logo">
+    <span class="logo-icon">🥩</span>
+    <div>
+      <h1>Carne Monitor</h1>
+      <span>Retail Peru — Wong · Metro · Plaza Vea · Tottus · Vivanda</span>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="ws-dot" id="ws-dot"></span>
+    <span id="ws-label" style="font-size:.78rem;color:var(--muted)">Desconectado</span>
+    <span id="state-badge" class="badge-idle">Idle</span>
+    <button class="btn-ghost" onclick="openModal()">⚙ Configurar</button>
+    <button class="btn-primary" id="btn-start" onclick="startScrape()">▶ Iniciar Scraping</button>
+    <button class="btn-danger" id="btn-stop" onclick="stopScrape()" style="display:none">⏹ Detener</button>
+  </div>
+</header>
+
+<!-- ═══════════════════ MAIN ═══════════════════ -->
+<main>
+
+  <!-- Stat cards -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Productos</div>
+      <div class="stat-value" id="stat-total">0</div>
+      <div class="stat-sub">encontrados</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Sitios</div>
+      <div class="stat-value" id="stat-sites">0<span style="font-size:1.1rem;color:var(--muted)">/3</span></div>
+      <div class="stat-sub" id="stat-sites-sub">pendiente</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Categorías</div>
+      <div class="stat-value" id="stat-cats">0<span style="font-size:1.1rem;color:var(--muted)">/4</span></div>
+      <div class="stat-sub">completadas</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Inicio</div>
+      <div class="stat-value" id="stat-time" style="font-size:1.1rem;padding-top:6px">--:--</div>
+      <div class="stat-sub" id="stat-elapsed">--</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Precio prom. kg</div>
+      <div class="stat-value" id="stat-avg-price" style="font-size:1.3rem;padding-top:6px">S/ --</div>
+      <div class="stat-sub">todas las categorías</div>
+    </div>
+  </div>
+
+  <!-- Progress + Log -->
+  <div class="two-col">
+    <div class="panel">
+      <div class="panel-header">
+        Progreso por Sitio &amp; Categoría
+        <span id="progress-pct" style="color:var(--accent);font-size:.9rem">0%</span>
+      </div>
+      <div class="panel-body" style="padding:0">
+        <table class="progress-table" id="progress-table">
+          <thead>
+            <tr>
+              <th>Sitio</th>
+              <th class="cat-cell">Pollo</th>
+              <th class="cat-cell">Carne</th>
+              <th class="cat-cell">Cerdo</th>
+              <th class="cat-cell">Huevo</th>
+            </tr>
+          </thead>
+          <tbody id="progress-body">
+            <!-- filled by JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        Log en Tiempo Real
+        <button class="btn-ghost" style="padding:3px 10px;font-size:.73rem" onclick="clearLog()">Limpiar</button>
+      </div>
+      <div id="log-panel"></div>
+    </div>
+  </div>
+
+  <!-- Products table -->
+  <div class="panel">
+    <div class="panel-header">Productos Encontrados</div>
+    <div class="panel-body">
+      <div class="table-controls">
+        <input class="search-input" id="search-input" type="text" placeholder="Buscar producto..." oninput="renderTable()" />
+        <select class="filter-sel" id="filter-site" onchange="renderTable()">
+          <option value="">Todos los sitios</option>
+        </select>
+        <select class="filter-sel" id="filter-cat" onchange="renderTable()">
+          <option value="">Todas las categorías</option>
+          <option value="pollo">Pollo</option>
+          <option value="res">Res</option>
+          <option value="cerdo">Cerdo</option>
+          <option value="huevos">Huevos</option>
+          <option value="embutidos">Embutidos</option>
+        </select>
+        <button class="btn-ghost" id="btn-group" style="padding:6px 14px" onclick="toggleGroup()">⊞ Agrupar</button>
+        <span id="table-count" style="color:var(--muted);font-size:.82rem;margin-left:auto"></span>
+        <button class="btn-ghost" style="padding:6px 14px" onclick="exportCSV()">⬇ CSV</button>
+      </div>
+      <div class="products-wrap">
+        <table class="products-table">
+          <thead>
+            <tr>
+              <th onclick="sortBy('name')">Producto ⇅</th>
+              <th onclick="sortBy('site')">Sitio ⇅</th>
+              <th onclick="sortBy('category')">Categoría ⇅</th>
+              <th onclick="sortBy('price')">PV ⇅</th>
+              <th onclick="sortBy('unit')">Unidad ⇅</th>
+              <th onclick="sortBy('price_per_kg')">S/kg ⇅</th>
+              <th onclick="sortBy('cost_price')" title="Solo Fresqui">Costo ⇅</th>
+              <th onclick="sortBy('margin')" title="Solo Fresqui">Margen ⇅</th>
+            </tr>
+          </thead>
+          <tbody id="products-body">
+            <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:32px">Sin datos aún — inicia el scraping</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Comparison Fresqui vs Mercado -->
+  <div class="panel">
+    <div class="panel-header">
+      Fresqui vs Mercado — por producto
+      <div style="display:flex;gap:8px;align-items:center">
+        <select class="filter-sel" id="comp-cat" onchange="renderComparison()" style="font-size:.75rem;padding:4px 8px">
+          <option value="">Todas</option>
+          <option value="pollo">Pollo</option>
+          <option value="res">Res</option>
+          <option value="cerdo">Cerdo</option>
+          <option value="huevos">Huevos</option>
+          <option value="embutidos">Embutidos</option>
+        </select>
+        <button class="btn-ghost" style="padding:4px 12px;font-size:.75rem" onclick="reloadFresqui()">↺ Recargar Excel</button>
+      </div>
+    </div>
+    <div style="overflow-x:auto;max-height:400px;overflow-y:auto">
+      <table class="comp-table">
+        <thead>
+          <tr>
+            <th>Producto Fresqui</th>
+            <th>Cat.</th>
+            <th>Tu PV</th>
+            <th>Tu Costo</th>
+            <th>Margen</th>
+            <th>Mín. competencia</th>
+            <th>Máx. competencia</th>
+            <th>Prom. competencia</th>
+            <th>Diferencia</th>
+          </tr>
+        </thead>
+        <tbody id="comp-body">
+          <tr><td colspan="9" style="text-align:center;color:var(--muted);padding:28px">Inicia el scraping para ver la comparación</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Chart -->
+  <div class="panel">
+    <div class="panel-header">Precios Promedio por Categoría — Fresqui vs Competencia (S/)</div>
+    <div class="panel-body">
+      <div class="chart-wrap">
+        <canvas id="price-chart"></canvas>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ═══════════════════ CONFIG MODAL ═══════════════════ -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h2>⚙ Configurar Scraping</h2>
+    <div class="modal-group">
+      <label>Sitios</label>
+      <div class="checkbox-grid" id="modal-sites"></div>
+    </div>
+    <div class="modal-group">
+      <label>Categorías</label>
+      <div class="checkbox-grid">
+        <label><input type="checkbox" value="pollo"  checked> Pollo</label>
+        <label><input type="checkbox" value="carne"  checked> Carne</label>
+        <label><input type="checkbox" value="cerdo"  checked> Cerdo</label>
+        <label><input type="checkbox" value="huevo"  checked> Huevo</label>
+      </div>
+    </div>
+    <div class="modal-group">
+      <label>Modo</label>
+      <div class="toggle-row">
+        <span style="font-size:.88rem">Ejecutar en modo headless (sin ventana)</span>
+        <label class="toggle">
+          <input type="checkbox" id="headless-toggle" checked>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn-primary" onclick="applyAndStart()">▶ Iniciar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// State
+// ═══════════════════════════════════════════════════
+let ws = null;
+let products = [];
+let sortCol = 'price';
+let sortAsc = true;
+let startedAt = null;
+let elapsedTimer = null;
+let groupMode = false;
+let chart = null;
+
+const SITES = ['wong','metro','plazavea'];
+const SITE_NAMES = {wong:'Wong', metro:'Metro', plazavea:'Plaza Vea', fresqui:'Fresqui'};
+const CATS = ['pollo','res','cerdo','huevos','embutidos'];
+const COMPETITOR_SITES = ['Wong','Metro','Plaza Vea'];
+const CAT_COLORS = {
+  wong:     '#3b82f6',
+  metro:    '#22c55e',
+  plazavea: '#f59e0b',
+};
+
+// ═══════════════════════════════════════════════════
+// Init
+// ═══════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  buildProgressTable(SITES, CATS);
+  buildModalSites();
+  buildChart();
+  connectWS();
+  populateSiteFilter();
+});
+
+// ═══════════════════════════════════════════════════
+// WebSocket
+// ═══════════════════════════════════════════════════
+function connectWS() {
+  const url = `ws://${location.host}/ws`;
+  ws = new WebSocket(url);
+
+  ws.onopen = () => {
+    setWSDot(true);
+    log('Conectado al servidor', 'info');
+  };
+
+  ws.onclose = () => {
+    setWSDot(false);
+    log('Desconectado — reconectando en 3s…', 'warn');
+    setTimeout(connectWS, 3000);
+  };
+
+  ws.onerror = () => {
+    log('Error WebSocket', 'error');
+  };
+
+  ws.onmessage = (e) => {
+    const ev = JSON.parse(e.data);
+    handleEvent(ev);
+  };
+}
+
+function setWSDot(connected) {
+  const dot = document.getElementById('ws-dot');
+  const lbl = document.getElementById('ws-label');
+  dot.className = 'ws-dot' + (connected ? ' connected' : '');
+  lbl.textContent = connected ? 'Conectado' : 'Desconectado';
+}
+
+// ═══════════════════════════════════════════════════
+// Event handler
+// ═══════════════════════════════════════════════════
+function handleEvent(ev) {
+  switch (ev.type) {
+    case 'ping': break;
+
+    case 'status':
+      if (ev.state === 'running') {
+        setRunningUI();
+        if (ev.started_at) startTimer(ev.started_at);
+      } else {
+        setIdleUI(ev.state);
+      }
+      if (ev.progress) applyFullProgress(ev.progress);
+      updateStats(ev.products_count || 0);
+      // Load products immediately on connect (includes Fresqui)
+      refreshProducts();
+      break;
+
+    case 'site_start':
+      log(`Iniciando → ${ev.name}`, 'info');
+      break;
+
+    case 'progress':
+      updateCell(ev.site, ev.category, ev.state, ev.count);
+      log(`${ev.site} / ${ev.category}: ${ev.count} productos [${ev.state}]`,
+          ev.state === 'done' ? 'ok' : ev.state === 'error' ? 'error' : 'info');
+      refreshProducts();
+      break;
+
+    case 'site_done':
+      log(`✓ ${ev.site} completo — ${ev.count} productos`, 'ok');
+      refreshProducts();
+      break;
+
+    case 'site_error':
+      log(`✗ Error en ${ev.site}: ${ev.error}`, 'error');
+      break;
+
+    case 'finished':
+      stopTimer();
+      setIdleUI(ev.state);
+      log(`Scraping ${ev.state === 'done' ? 'completado' : 'detenido'} — ${ev.total} productos totales`,
+          ev.state === 'done' ? 'ok' : 'warn');
+      refreshProducts();
+      break;
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// Controls
+// ═══════════════════════════════════════════════════
+function startScrape() { openModal(); }
+
+function applyAndStart() {
+  const sites = [...document.querySelectorAll('#modal-sites input:checked')].map(x => x.value);
+  const cats  = [...document.querySelectorAll('.checkbox-grid input[type=checkbox]:not(#modal-sites input):checked')].map(x => x.value);
+  const headless = document.getElementById('headless-toggle').checked;
+  closeModal();
+
+  fetch('/api/scrape/start', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ sites: sites.length ? sites : null, categories: cats.length ? cats : null, headless }),
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.ok) {
+      setRunningUI();
+      startTimer(new Date().toISOString());
+      buildProgressTable(sites.length ? sites : SITES, cats.length ? cats : CATS);
+      log('Scraping iniciado', 'ok');
+    } else {
+      log(d.message, 'warn');
+    }
+  });
+}
+
+function stopScrape() {
+  fetch('/api/scrape/stop', { method: 'POST' })
+    .then(() => log('Señal de stop enviada', 'warn'));
+}
+
+// ═══════════════════════════════════════════════════
+// Products
+// ═══════════════════════════════════════════════════
+function refreshProducts() {
+  fetch('/api/products')
+    .then(r => r.json())
+    .then(d => {
+      products = d.products || [];
+      renderTable();
+      updateStats(products.length);
+      updateChart();
+      renderComparison();
+    });
+}
+
+// Normaliza el nombre para agrupar: elimina pesos/unidades, palabras vacías, toma 2 palabras clave
+function normalizeName(name) {
+  const stopWords = new Set(['de','la','el','las','los','sin','con','por','en','a','y','o','un','una','al','del','fresca','fresco','entero','entera','especial','extra','premium','selecto','selecta']);
+  return name
+    .toLowerCase()
+    .replace(/\b\d+(\.\d+)?\s*(kg|g|gr|lb|ml|l|lt|un|und|unid|unidad|unidades|pza|piezas?)\b/gi, '')
+    .replace(/[^a-záéíóúüñ\s]/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(' ')
+    .filter(w => w.length > 1 && !stopWords.has(w))
+    .slice(0, 2)
+    .join(' ');
+}
+
+function productRowHtml(p) {
+  const isFresqui = p.site === 'Fresqui';
+  const siteTag = isFresqui
+    ? `<span class="site-tag site-fresqui">Fresqui</span>`
+    : `<span class="site-tag">${p.site}</span>`;
+  const marginHtml = isFresqui && p.margin != null
+    ? `<span class="${p.margin >= 0.35 ? 'margin-good' : p.margin >= 0.2 ? 'margin-warn' : 'margin-bad'}">${(p.margin*100).toFixed(1)}%</span>`
+    : `<span style="color:var(--muted)">—</span>`;
+  const costHtml = isFresqui && p.cost_price != null
+    ? `<span style="color:#94a3b8;font-family:monospace">S/ ${p.cost_price.toFixed(2)}</span>`
+    : `<span style="color:var(--muted)">—</span>`;
+  return `<tr class="${isFresqui ? 'fresqui-row' : ''}">
+    <td title="${p.name}">${p.name}</td>
+    <td>${siteTag}</td>
+    <td><span class="cat-tag cat-${p.category}">${p.category}</span></td>
+    <td class="price-cell">S/ ${p.price?.toFixed(2) ?? '--'}</td>
+    <td>${p.unit ?? '--'}</td>
+    <td class="price-cell">${p.price_per_kg ? 'S/ ' + p.price_per_kg.toFixed(2) : '--'}</td>
+    <td>${costHtml}</td>
+    <td>${marginHtml}</td>
+  </tr>`;
+}
+
+function toggleGroup() {
+  groupMode = !groupMode;
+  const btn = document.getElementById('btn-group');
+  btn.classList.toggle('btn-group-active', groupMode);
+  btn.textContent = groupMode ? '⊟ Desagrupar' : '⊞ Agrupar';
+  renderTable();
+}
+
+function renderTable() {
+  const q    = document.getElementById('search-input').value.toLowerCase();
+  const site = document.getElementById('filter-site').value;
+  const cat  = document.getElementById('filter-cat').value;
+
+  let rows = products.filter(p =>
+    (!q    || p.name.toLowerCase().includes(q)) &&
+    (!site || p.site === site) &&
+    (!cat  || p.category === cat)
+  );
+
+  document.getElementById('table-count').textContent = `${rows.length} resultado${rows.length !== 1 ? 's' : ''}`;
+
+  const tbody = document.getElementById('products-body');
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:28px">Sin resultados</td></tr>`;
+    return;
+  }
+
+  if (groupMode) {
+    // Agrupar por nombre normalizado, luego por categoría
+    const groups = new Map();
+    rows.forEach(p => {
+      const key = normalizeName(p.name);
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(p);
+    });
+
+    // Ordenar grupos por clave; dentro de cada grupo ordenar por precio
+    const sortedGroups = [...groups.entries()]
+      .sort((a, b) => a[0].localeCompare(b[0]));
+
+    let html = '';
+    let total = 0;
+    for (const [key, items] of sortedGroups) {
+      if (total >= 500) break;
+      // Ordenar dentro del grupo: Fresqui primero, luego por precio
+      items.sort((a, b) => {
+        if (a.site === 'Fresqui') return -1;
+        if (b.site === 'Fresqui') return 1;
+        return (a.price ?? 999) - (b.price ?? 999);
+      });
+      const minPrice = items.filter(p => p.site !== 'Fresqui' && p.price != null)
+        .reduce((m, p) => Math.min(m, p.price), Infinity);
+      const priceInfo = isFinite(minPrice) ? ` — desde S/ ${minPrice.toFixed(2)}` : '';
+      html += `<tr class="group-header-row"><td colspan="8">▸ ${key}${priceInfo} (${items.length} tienda${items.length !== 1 ? 's' : ''})</td></tr>`;
+      items.slice(0, 500 - total).forEach(p => { html += productRowHtml(p); });
+      total += items.length;
+    }
+    tbody.innerHTML = html;
+  } else {
+    // Modo lista plana con orden normal
+    rows.sort((a,b) => {
+      let va = a[sortCol] ?? '', vb = b[sortCol] ?? '';
+      if (typeof va === 'number') return sortAsc ? va - vb : vb - va;
+      return sortAsc ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
+    });
+    tbody.innerHTML = rows.slice(0, 500).map(productRowHtml).join('');
+  }
+}
+
+function sortBy(col) {
+  if (sortCol === col) sortAsc = !sortAsc;
+  else { sortCol = col; sortAsc = true; }
+  renderTable();
+}
+
+function exportCSV() {
+  if (!products.length) return;
+  const keys = ['name','site','category','price','unit','price_per_kg','brand','in_stock','scraped_at'];
+  const header = keys.join(',');
+  const rows = products.map(p => keys.map(k => JSON.stringify(p[k] ?? '')).join(','));
+  const blob = new Blob([header + '\n' + rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `productos_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.csv`;
+  a.click();
+}
+
+// ═══════════════════════════════════════════════════
+// Progress table
+// ═══════════════════════════════════════════════════
+function buildProgressTable(sites, cats) {
+  const thead = document.querySelector('#progress-table thead tr');
+  thead.innerHTML = '<th>Sitio</th>' + cats.map(c => `<th class="cat-cell">${cap(c)}</th>`).join('');
+
+  const tbody = document.getElementById('progress-body');
+  tbody.innerHTML = sites.map(s => `
+    <tr data-site="${s}">
+      <td class="site-name">${SITE_NAMES[s] || s}</td>
+      ${cats.map(c => `<td class="cat-cell"><span class="pill pill-pending" id="cell-${s}-${c}">—</span></td>`).join('')}
+    </tr>
+  `).join('');
+}
+
+function updateCell(siteName, cat, state, count) {
+  // siteName here is the display name — find the site key
+  const siteKey = Object.entries(SITE_NAMES).find(([,v]) => v === siteName)?.[0] || siteName.toLowerCase();
+  const el = document.getElementById(`cell-${siteKey}-${cat}`);
+  if (!el) return;
+  el.className = `pill pill-${state}`;
+  el.textContent = state === 'pending' ? '—' : state === 'running' ? '…' : count;
+  updateProgressPct();
+}
+
+function applyFullProgress(progress) {
+  for (const [siteKey, cats] of Object.entries(progress)) {
+    for (const [cat, info] of Object.entries(cats)) {
+      const el = document.getElementById(`cell-${siteKey}-${cat}`);
+      if (el) {
+        el.className = `pill pill-${info.state}`;
+        el.textContent = info.state === 'pending' ? '—' : info.state === 'running' ? '…' : info.count;
+      }
+    }
+  }
+  updateProgressPct();
+}
+
+function updateProgressPct() {
+  const pills = document.querySelectorAll('[id^="cell-"]');
+  const total = pills.length;
+  if (!total) return;
+  const done = [...pills].filter(p => p.classList.contains('pill-done') || p.classList.contains('pill-error')).length;
+  document.getElementById('progress-pct').textContent = Math.round(done / total * 100) + '%';
+
+  const doneSites = new Set();
+  [...pills].forEach(p => {
+    if (p.classList.contains('pill-done')) {
+      const id = p.id.replace('cell-','');
+      doneSites.add(id.split('-')[0]);
+    }
+  });
+  document.getElementById('stat-sites').innerHTML = `${doneSites.size}<span style="font-size:1.1rem;color:var(--muted)">/${SITES.length}</span>`;
+  document.getElementById('stat-cats').innerHTML = `${done}<span style="font-size:1.1rem;color:var(--muted)">/${total}</span>`;
+}
+
+// ═══════════════════════════════════════════════════
+// Stats
+// ═══════════════════════════════════════════════════
+function updateStats(total) {
+  document.getElementById('stat-total').textContent = total.toLocaleString();
+
+  const kgProducts = products.filter(p => p.price_per_kg);
+  if (kgProducts.length) {
+    const avg = kgProducts.reduce((s, p) => s + p.price_per_kg, 0) / kgProducts.length;
+    document.getElementById('stat-avg-price').textContent = `S/ ${avg.toFixed(2)}`;
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// Chart
+// ═══════════════════════════════════════════════════
+function buildChart() {
+  const ctx = document.getElementById('price-chart').getContext('2d');
+  chart = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: CATS.map(cap), datasets: [] },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#94a3b8', font: { size: 12 } } },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` S/ ${ctx.raw?.toFixed(2) ?? 0}`,
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { color: '#94a3b8' }, grid: { color: '#1c2e4a' } },
+        y: {
+          ticks: { color: '#94a3b8', callback: v => `S/ ${v}` },
+          grid: { color: '#1c2e4a' },
+        },
+      },
+    }
+  });
+}
+
+function updateChart() {
+  if (!products.length || !chart) return;
+  const allSites = [...SITES, 'fresqui'];
+  const allColors = {...CAT_COLORS, fresqui: '#f59e0b'};
+  const datasets = allSites.map(site => {
+    const siteName = SITE_NAMES[site];
+    const data = CATS.map(cat => {
+      const ps = products.filter(p => p.site === siteName && p.category === cat && p.price);
+      return ps.length ? Math.round(ps.reduce((s,p) => s + p.price, 0) / ps.length * 100) / 100 : null;
+    });
+    const isFresqui = site === 'fresqui';
+    return {
+      label: siteName,
+      data,
+      backgroundColor: allColors[site] + (isFresqui ? 'ff' : 'bb'),
+      borderColor: allColors[site],
+      borderWidth: isFresqui ? 2 : 1,
+      borderRadius: 4,
+      borderDash: isFresqui ? [] : [],
+    };
+  }).filter(d => d.data.some(v => v !== null));
+
+  chart.data.datasets = datasets;
+  chart.update();
+}
+
+// ═══════════════════════════════════════════════════
+// Comparison: Fresqui vs Competencia
+// ═══════════════════════════════════════════════════
+function renderComparison() {
+  const filterCat = document.getElementById('comp-cat').value;
+  const fresquiProds = products.filter(p => p.site === 'Fresqui' && (!filterCat || p.category === filterCat));
+  const competitors  = products.filter(p => COMPETITOR_SITES.includes(p.site));
+  const tbody = document.getElementById('comp-body');
+
+  if (!fresquiProds.length) {
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px">Sin datos — inicia el scraping</td></tr>`;
+    return;
+  }
+
+  const rows = fresquiProds.map(fp => {
+    // Find competitors in same category with similar price range (±60%)
+    const catComps = competitors.filter(c => c.category === fp.category && c.price > 0);
+    const prices = catComps.map(c => c.price);
+    if (!prices.length) {
+      return `<tr>
+        <td title="${fp.name}">${fp.name}</td>
+        <td><span class="cat-tag cat-${fp.category}">${fp.category}</span></td>
+        <td class="price-fresqui">S/ ${fp.price.toFixed(2)}</td>
+        <td style="color:var(--muted)">${fp.cost_price ? 'S/ ' + fp.cost_price.toFixed(2) : '—'}</td>
+        <td>${fp.margin != null ? marginSpan(fp.margin) : '—'}</td>
+        <td colspan="4" style="color:var(--muted);font-size:.78rem">Sin datos de competencia</td>
+      </tr>`;
+    }
+    const minP = Math.min(...prices);
+    const maxP = Math.max(...prices);
+    const avgP = prices.reduce((a,b)=>a+b,0)/prices.length;
+    const diff = fp.price - avgP;
+    const pct  = (diff / avgP * 100).toFixed(1);
+    const diffClass = Math.abs(diff) < avgP * 0.03 ? 'diff-parity' : diff < 0 ? 'diff-cheaper' : 'diff-dearer';
+    const diffLabel = Math.abs(diff) < avgP * 0.03 ? 'similar' : diff < 0 ? `${Math.abs(pct)}% más barato` : `${pct}% más caro`;
+
+    return `<tr>
+      <td title="${fp.name}">${fp.name}</td>
+      <td><span class="cat-tag cat-${fp.category}">${fp.category}</span></td>
+      <td class="price-fresqui">S/ ${fp.price.toFixed(2)}</td>
+      <td style="color:var(--muted);font-family:monospace">${fp.cost_price ? 'S/ ' + fp.cost_price.toFixed(2) : '—'}</td>
+      <td>${fp.margin != null ? marginSpan(fp.margin) : '—'}</td>
+      <td class="price-lower">S/ ${minP.toFixed(2)}</td>
+      <td class="price-higher">S/ ${maxP.toFixed(2)}</td>
+      <td style="font-family:monospace">S/ ${avgP.toFixed(2)}</td>
+      <td><span class="diff-badge ${diffClass}">${diffLabel}</span></td>
+    </tr>`;
+  });
+
+  tbody.innerHTML = rows.join('');
+}
+
+function marginSpan(m) {
+  const cls = m >= 0.35 ? 'margin-good' : m >= 0.2 ? 'margin-warn' : 'margin-bad';
+  return `<span class="${cls}">${(m*100).toFixed(1)}%</span>`;
+}
+
+async function reloadFresqui() {
+  const r = await fetch('/api/fresqui/reload', {method:'POST'});
+  const d = await r.json();
+  log(d.message, 'ok');
+  refreshProducts();
+}
+
+// ═══════════════════════════════════════════════════
+// Log
+// ═══════════════════════════════════════════════════
+function log(msg, type = 'info') {
+  const panel = document.getElementById('log-panel');
+  const time = new Date().toLocaleTimeString('es-PE');
+  const line = document.createElement('div');
+  line.className = 'log-line';
+  line.innerHTML = `<span class="log-time">[${time}]</span> <span class="log-${type}">${escHtml(msg)}</span>`;
+  panel.appendChild(line);
+  if (panel.children.length > 200) panel.removeChild(panel.firstChild);
+  panel.scrollTop = panel.scrollHeight;
+}
+
+function clearLog() {
+  document.getElementById('log-panel').innerHTML = '';
+}
+
+// ═══════════════════════════════════════════════════
+// UI State helpers
+// ═══════════════════════════════════════════════════
+function setRunningUI() {
+  setBadge('running', 'CORRIENDO');
+  document.getElementById('btn-start').style.display = 'none';
+  document.getElementById('btn-stop').style.display = '';
+}
+
+function setIdleUI(state = 'idle') {
+  const label = state === 'done' ? 'LISTO' : state === 'stopped' ? 'DETENIDO' : 'IDLE';
+  setBadge(state === 'done' ? 'done' : state === 'stopped' ? 'stopped' : 'idle', label);
+  document.getElementById('btn-start').style.display = '';
+  document.getElementById('btn-stop').style.display = 'none';
+}
+
+function setBadge(cls, text) {
+  const b = document.getElementById('state-badge');
+  b.className = `badge-${cls}`;
+  b.textContent = text;
+}
+
+function startTimer(iso) {
+  startedAt = new Date(iso);
+  const t = startedAt.toLocaleTimeString('es-PE');
+  document.getElementById('stat-time').textContent = t;
+  stopTimer();
+  elapsedTimer = setInterval(() => {
+    const sec = Math.floor((Date.now() - startedAt) / 1000);
+    const m = String(Math.floor(sec / 60)).padStart(2,'0');
+    const s = String(sec % 60).padStart(2,'0');
+    document.getElementById('stat-elapsed').textContent = `${m}:${s} transcurrido`;
+  }, 1000);
+}
+
+function stopTimer() {
+  if (elapsedTimer) { clearInterval(elapsedTimer); elapsedTimer = null; }
+}
+
+// ═══════════════════════════════════════════════════
+// Modal
+// ═══════════════════════════════════════════════════
+function buildModalSites() {
+  document.getElementById('modal-sites').innerHTML = SITES.map(s => `
+    <label><input type="checkbox" value="${s}" checked> ${SITE_NAMES[s]}</label>
+  `).join('');
+}
+
+function openModal()  { document.getElementById('modal').classList.add('open'); }
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+document.getElementById('modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+
+// ═══════════════════════════════════════════════════
+// Misc
+// ═══════════════════════════════════════════════════
+function populateSiteFilter() {
+  const sel = document.getElementById('filter-site');
+  SITES.forEach(s => sel.insertAdjacentHTML('beforeend', `<option value="${SITE_NAMES[s]}">${SITE_NAMES[s]}</option>`));
+}
+
+function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+</script>
+</body>
+</html>
