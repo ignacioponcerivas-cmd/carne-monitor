@@ -606,7 +606,8 @@ window.addEventListener('DOMContentLoaded', () => {
 // WebSocket
 // ═══════════════════════════════════════════════════
 function connectWS() {
-  const url = `ws://${location.host}/ws`;
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  const url = `${proto}://${location.host}/ws`;
   ws = new WebSocket(url);
 
   ws.onopen = () => {
